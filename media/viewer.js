@@ -52,8 +52,7 @@ function renderDex(message) {
       else vscode.postMessage({ cmd: "dexList", query });
     });
   });
-  document.getElementById("list").innerHTML = `<p class="muted" style="padding:8px 10px">Loading classes…</p>`;
-  vscode.postMessage({ cmd: "dexList", query: "" });
+  if (message.page) paintDexClasses(message.page);
 }
 
 function dexSide(message) {
@@ -173,6 +172,7 @@ function renderElf(message) {
       }
     });
   });
+  if (message.symbols) renderElfSymbols({ symbols: message.symbols, shown: message.symbols.length, total: message.symbolTotal });
 }
 
 function setElfTab(tab) {
@@ -321,8 +321,7 @@ function renderJar(message) {
     const query = event.target.value;
     later(() => vscode.postMessage({ cmd: "jarList", query }));
   });
-  document.getElementById("list").innerHTML = `<p class="muted" style="padding:8px 10px">Loading entries…</p>`;
-  vscode.postMessage({ cmd: "jarList", query: "" });
+  if (message.page) paintJar(message.page);
 }
 
 function paintJar(message) {

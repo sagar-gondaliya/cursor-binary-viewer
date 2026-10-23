@@ -110,8 +110,8 @@ class BinaryEditorProvider implements vscode.CustomReadonlyEditorProvider<Binary
           elapsedMs: Date.now() - started,
           header: dex.header,
           hex: hexPreview(bytes),
+          page: pageClasses(dex, ""),
         });
-        send(pageClasses(dex, ""));
       } else if (view.endsWith(".elf")) {
         const elf = parseElf(bytes);
         this.sessions.set(key, { kind: "elf", elf });
@@ -128,9 +128,9 @@ class BinaryEditorProvider implements vscode.CustomReadonlyEditorProvider<Binary
             notes: elf.notes,
           },
           hex: hexPreview(bytes),
+          symbols: elf.symbols.slice(0, 300),
+          symbolTotal: elf.symbols.length,
         });
-        const symbols = elf.symbols.slice(0, 300);
-        send({ cmd: "elfSymbols", symbols, total: elf.symbols.length, shown: symbols.length });
       } else if (view.endsWith(".mf") || view.endsWith(".sf")) {
         const manifest = parseJarManifest(bytes, view.endsWith(".mf") ? "mf" : "sf");
         this.sessions.set(key, { kind: "jar", manifest });
@@ -140,8 +140,8 @@ class BinaryEditorProvider implements vscode.CustomReadonlyEditorProvider<Binary
           elapsedMs: Date.now() - started,
           manifest: { label: manifest.label, main: manifest.main, entryCount: manifest.entries.length },
           hex: hexPreview(bytes),
+          page: pageEntries(manifest, ""),
         });
-        send(pageEntries(manifest, ""));
       } else if (view.endsWith(".rsa") || view.endsWith(".dsa")) {
         const block = parseSignatureBlock(bytes, view.endsWith(".rsa") ? "rsa" : "dsa");
         this.sessions.set(key, { kind: "pkcs" });
