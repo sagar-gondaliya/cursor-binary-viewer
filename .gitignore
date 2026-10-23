@@ -1,0 +1,6 @@
+node_modules/
+out/
+*.vsix
+media/rive.js
+media/rive.wasm
+media/rive_fallback.wasm

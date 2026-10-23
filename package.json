@@ -1,0 +1,134 @@
+{
+  "name": "cursor-binary-viewer",
+  "displayName": "DEX, ELF, Rive, and APK Signature Viewer",
+  "description": "Read Android DEX classes, ELF shared libraries, Rive animations, and JAR signature files inside Cursor.",
+  "version": "0.3.0",
+  "publisher": "sagargondaliya",
+  "author": {
+    "name": "Sagar Gondaliya",
+    "url": "https://github.com/sagar-gondaliya"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sagar-gondaliya/cursor-binary-viewer.git"
+  },
+  "homepage": "https://github.com/sagar-gondaliya/cursor-binary-viewer",
+  "bugs": {
+    "url": "https://github.com/sagar-gondaliya/cursor-binary-viewer/issues"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "dex",
+    "elf",
+    "so",
+    "rive",
+    "android",
+    "manifest",
+    "pkcs7"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "android-dex",
+        "aliases": ["Android DEX"],
+        "extensions": [".dex"]
+      },
+      {
+        "id": "elf-shared",
+        "aliases": ["ELF shared library"],
+        "extensions": [".so"]
+      },
+      {
+        "id": "rive-animation",
+        "aliases": ["Rive"],
+        "extensions": [".riv"]
+      },
+      {
+        "id": "jar-manifest",
+        "aliases": ["JAR manifest"],
+        "extensions": [".mf", ".MF"]
+      },
+      {
+        "id": "jar-signature",
+        "aliases": ["JAR signature file"],
+        "extensions": [".sf", ".SF"]
+      },
+      {
+        "id": "pkcs7-rsa",
+        "aliases": ["PKCS#7 RSA block"],
+        "extensions": [".rsa", ".RSA"]
+      },
+      {
+        "id": "pkcs7-dsa",
+        "aliases": ["PKCS#7 DSA block"],
+        "extensions": [".dsa", ".DSA"]
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "cursorBinaryViewer.dex",
+        "displayName": "DEX Viewer",
+        "selector": [{ "filenamePattern": "*.dex" }],
+        "priority": "default"
+      },
+      {
+        "viewType": "cursorBinaryViewer.elf",
+        "displayName": "ELF Viewer",
+        "selector": [{ "filenamePattern": "*.so" }],
+        "priority": "default"
+      },
+      {
+        "viewType": "cursorBinaryViewer.rive",
+        "displayName": "Rive Viewer",
+        "selector": [{ "filenamePattern": "*.riv" }],
+        "priority": "default"
+      },
+      {
+        "viewType": "cursorBinaryViewer.mf",
+        "displayName": "JAR Manifest Viewer",
+        "selector": [{ "filenamePattern": "*.mf" }, { "filenamePattern": "*.MF" }],
+        "priority": "default"
+      },
+      {
+        "viewType": "cursorBinaryViewer.sf",
+        "displayName": "JAR Signature File Viewer",
+        "selector": [{ "filenamePattern": "*.sf" }, { "filenamePattern": "*.SF" }],
+        "priority": "default"
+      },
+      {
+        "viewType": "cursorBinaryViewer.rsa",
+        "displayName": "PKCS#7 RSA Viewer",
+        "selector": [{ "filenamePattern": "*.rsa" }, { "filenamePattern": "*.RSA" }],
+        "priority": "default"
+      },
+      {
+        "viewType": "cursorBinaryViewer.dsa",
+        "displayName": "PKCS#7 DSA Viewer",
+        "selector": [{ "filenamePattern": "*.dsa" }, { "filenamePattern": "*.DSA" }],
+        "priority": "default"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p . && node scripts/copy-rive.mjs",
+    "test": "tsc -p . && node --test out/test/parse.test.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@rive-app/canvas": "2.31.6",
+    "@types/node": "^22.15.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.6.0",
+    "typescript": "^5.8.3"
+  }
+}
