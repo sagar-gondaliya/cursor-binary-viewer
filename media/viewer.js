@@ -1,6 +1,5 @@
 const vscode = acquireVsCodeApi();
 const app = document.getElementById("app");
-vscode.postMessage({ cmd: "ready" });
 
 window.addEventListener("message", (event) => {
   const message = event.data;
@@ -20,6 +19,8 @@ window.addEventListener("message", (event) => {
   if (message.cmd === "jarList") paintJar(message);
   if (message.cmd === "pkcs") renderPkcs(message);
 });
+
+vscode.postMessage({ cmd: "ready" });
 
 let dexState = null;
 let elfState = null;
@@ -52,6 +53,7 @@ function renderDex(message) {
     });
   });
   document.getElementById("list").innerHTML = `<p class="muted" style="padding:8px 10px">Loading classes…</p>`;
+  vscode.postMessage({ cmd: "dexList", query: "" });
 }
 
 function dexSide(message) {
@@ -320,6 +322,7 @@ function renderJar(message) {
     later(() => vscode.postMessage({ cmd: "jarList", query }));
   });
   document.getElementById("list").innerHTML = `<p class="muted" style="padding:8px 10px">Loading entries…</p>`;
+  vscode.postMessage({ cmd: "jarList", query: "" });
 }
 
 function paintJar(message) {

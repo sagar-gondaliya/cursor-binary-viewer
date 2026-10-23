@@ -59,17 +59,16 @@ class BinaryEditorProvider implements vscode.CustomReadonlyEditorProvider<Binary
     const wasmUrl = webview.asWebviewUri(vscode.Uri.joinPath(this.mediaRoot, "rive.wasm"));
     const key = document.uri.toString();
     let ready = false;
-    const pending: unknown[] = [];
+    const history: unknown[] = [];
     const send = (message: unknown): void => {
+      history.push(message);
       if (ready) void webview.postMessage(message);
-      else pending.push(message);
     };
 
     webview.onDidReceiveMessage(async (message: { cmd?: string; index?: number; method?: number; query?: string }) => {
       if (message.cmd === "ready") {
         ready = true;
-        for (const item of pending) await webview.postMessage(item);
-        pending.length = 0;
+        for (const item of history) await webview.postMessage(item);
         return;
       }
       const session = this.sessions.get(key);
