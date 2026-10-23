@@ -1,5 +1,6 @@
 const vscode = acquireVsCodeApi();
 const app = document.getElementById("app");
+vscode.postMessage({ cmd: "ready" });
 
 window.addEventListener("message", (event) => {
   const message = event.data;
@@ -8,6 +9,7 @@ window.addEventListener("message", (event) => {
     return;
   }
   if (message.cmd === "dex") renderDex(message);
+  if (message.cmd === "dexList") paintDexClasses(message);
   if (message.cmd === "dexClass") renderDexClass(message.detail);
   if (message.cmd === "dexMethod") renderDexMethod(message.code);
   if (message.cmd === "dexStrings") renderDexStrings(message.strings);
@@ -15,6 +17,7 @@ window.addEventListener("message", (event) => {
   if (message.cmd === "elfSymbols") renderElfSymbols(message);
   if (message.cmd === "riv") renderRiv(message);
   if (message.cmd === "jar") renderJar(message);
+  if (message.cmd === "jarList") paintJar(message);
   if (message.cmd === "pkcs") renderPkcs(message);
 });
 
@@ -42,10 +45,13 @@ function renderDex(message) {
     button.addEventListener("click", () => setDexTab(button.dataset.tab));
   });
   document.getElementById("q").addEventListener("input", (event) => {
-    if (dexState.tab === "strings") vscode.postMessage({ cmd: "dexStrings", query: event.target.value });
-    else paintDexClasses(event.target.value);
+    const query = event.target.value;
+    later(() => {
+      if (dexState.tab === "strings") vscode.postMessage({ cmd: "dexStrings", query });
+      else vscode.postMessage({ cmd: "dexList", query });
+    });
   });
-  paintDexClasses("");
+  document.getElementById("list").innerHTML = `<p class="muted" style="padding:8px 10px">Loading classes…</p>`;
 }
 
 function dexSide(message) {
@@ -74,16 +80,15 @@ function setDexTab(tab) {
     document.getElementById("list").innerHTML = `<pre>${dexState.hex.map(esc).join("\n")}</pre>`;
   } else if (tab === "strings") {
     vscode.postMessage({ cmd: "dexStrings", query: input.value });
-  } else paintDexClasses(input.value);
+  } else vscode.postMessage({ cmd: "dexList", query: input.value });
 }
 
-function paintDexClasses(query) {
-  const needle = query.trim().toLowerCase();
-  const matches = dexState.classes.filter((item) => !needle || item.name.toLowerCase().includes(needle) || item.jniName.toLowerCase().includes(needle));
-  const shown = matches.slice(0, 400);
+function paintDexClasses(message) {
   const list = document.getElementById("list");
+  if (!list || !dexState || dexState.tab !== "classes") return;
+  const shown = message.classes;
   list.innerHTML = shown.map((item) => `<div class="row" data-index="${item.index}"><span>${esc(item.name)}</span><small>${esc(item.access)}</small></div>`).join("")
-    + `<p class="muted" style="padding:8px 10px">Showing ${shown.length} of ${matches.length} matching classes.</p>`;
+    + `<p class="muted" style="padding:8px 10px">Showing ${message.shown} of ${message.total} matching classes.</p>`;
   list.querySelectorAll(".row").forEach((row) => {
     row.addEventListener("click", () => {
       list.querySelectorAll(".row").forEach((item) => item.classList.remove("active"));
@@ -159,9 +164,12 @@ function renderElf(message) {
     </div>`;
   document.querySelectorAll(".tabs button").forEach((button) => button.addEventListener("click", () => setElfTab(button.dataset.tab)));
   document.getElementById("q").addEventListener("input", (event) => {
-    if (document.querySelector('[data-tab="symbols"]').getAttribute("aria-pressed") === "true") {
-      vscode.postMessage({ cmd: "elfFilter", query: event.target.value });
-    }
+    const query = event.target.value;
+    later(() => {
+      if (document.querySelector('[data-tab="symbols"]').getAttribute("aria-pressed") === "true") {
+        vscode.postMessage({ cmd: "elfFilter", query });
+      }
+    });
   });
 }
 
@@ -209,15 +217,33 @@ function renderRiv(message) {
         <p id="status" class="muted">Loading the Rive runtime…</p>
       </section>
     </div>`;
+  const status = document.getElementById("status");
   if (!message.info.valid) {
-    document.getElementById("status").textContent = message.info.note;
+    status.textContent = message.info.note;
     return;
   }
   if (message.truncated || !message.bytes) {
-    document.getElementById("status").textContent = "This .riv file is larger than 20 MB, so only the header and names are shown.";
+    status.textContent = "This .riv file is larger than 2 MB, so only the header and names are shown.";
     return;
   }
-  startRive(message.bytes);
+  status.textContent = "Loading the animation runtime…";
+  loadScript(message.riveUrl).then(() => {
+    if (window.rive?.RuntimeLoader && message.wasmUrl) window.rive.RuntimeLoader.setWasmUrl(message.wasmUrl);
+    startRive(message.bytes);
+  }).catch(() => {
+    status.textContent = "The animation runtime did not load. Names from the file are still listed.";
+  });
+}
+
+function loadScript(src) {
+  if (window.rive) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("script"));
+    document.body.appendChild(script);
+  });
 }
 
 function startRive(base64) {
@@ -226,7 +252,6 @@ function startRive(base64) {
     status.textContent = "The Rive runtime did not load. Header names are still listed on the left.";
     return;
   }
-  if (window.rive.RuntimeLoader && window.__RIVE_WASM__) window.rive.RuntimeLoader.setWasmUrl(window.__RIVE_WASM__);
   const binary = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
   const canvas = document.getElementById("canvas");
   const animation = document.getElementById("animation");
@@ -271,7 +296,7 @@ function renderJar(message) {
       <aside class="side">
         <h1>${esc(message.name)}</h1>
         ${stat("Kind", manifest.label)}
-        ${stat("Entries", manifest.entries.length)}
+        ${stat("Entries", manifest.entryCount)}
         <h2>Main attributes</h2>
         ${manifest.main.map((item) => `<div class="stat"><span>${esc(item.key)}</span></div><div class="mono">${esc(item.value)}</div>`).join("")}
         <p class="muted">Parsed in ${message.elapsedMs} ms.</p>
@@ -288,20 +313,29 @@ function renderJar(message) {
   document.querySelectorAll(".tabs button").forEach((button) => button.addEventListener("click", () => {
     document.querySelectorAll(".tabs button").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
     if (button.dataset.tab === "hex") document.getElementById("list").innerHTML = `<pre>${jarState.hex.map(esc).join("\n")}</pre>`;
-    else paintJar(document.getElementById("q").value);
+    else vscode.postMessage({ cmd: "jarList", query: document.getElementById("q").value });
   }));
-  document.getElementById("q").addEventListener("input", (event) => paintJar(event.target.value));
-  paintJar("");
+  document.getElementById("q").addEventListener("input", (event) => {
+    const query = event.target.value;
+    later(() => vscode.postMessage({ cmd: "jarList", query }));
+  });
+  document.getElementById("list").innerHTML = `<p class="muted" style="padding:8px 10px">Loading entries…</p>`;
 }
 
-function paintJar(query) {
-  const needle = query.trim().toLowerCase();
-  const matches = jarState.manifest.entries.filter((entry) => !needle || entry.name.toLowerCase().includes(needle));
-  const shown = matches.slice(0, 400);
-  document.getElementById("list").innerHTML = shown.map((entry) => `
+function paintJar(message) {
+  const list = document.getElementById("list");
+  const entriesTab = document.querySelector('[data-tab="entries"]');
+  if (!list || entriesTab?.getAttribute("aria-pressed") !== "true") return;
+  list.innerHTML = message.entries.map((entry) => `
     <div class="row"><span class="mono">${esc(entry.name)}</span><small>${esc(entry.digests.map((digest) => digest.key.replace(/-Digest$/, "")).join(", "))}</small></div>
     <div class="sub" style="padding:0 10px 8px">${entry.digests.map((digest) => `<div class="mono">${esc(digest.key)}: ${esc(digest.value)}</div>`).join("")}</div>
-  `).join("") + `<p class="muted" style="padding:8px 10px">Showing ${shown.length} of ${matches.length} entries.</p>`;
+  `).join("") + `<p class="muted" style="padding:8px 10px">Showing ${message.shown} of ${message.total} entries.</p>`;
+}
+
+let pendingTimer = 0;
+function later(work) {
+  clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(work, 60);
 }
 
 function renderPkcs(message) {

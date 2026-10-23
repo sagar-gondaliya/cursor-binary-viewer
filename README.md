@@ -13,7 +13,7 @@ Custom editors for binary formats that otherwise open as raw text in Cursor and 
 
 ## Install
 
-Download `cursor-binary-viewer-0.3.0.vsix` from the [latest release](https://github.com/sagar-gondaliya/cursor-binary-viewer/releases/latest).
+Download the `.vsix` from the [latest release](https://github.com/sagar-gondaliya/cursor-binary-viewer/releases/latest).
 
 In Cursor or VS Code, open the Extensions view, choose **Install from VSIX…**, and select that file. Reopen a `.dex`, `.so`, `.riv`, `.mf`, `.sf`, `.rsa`, or `.dsa` file. The viewer is the default editor for those extensions.
 
